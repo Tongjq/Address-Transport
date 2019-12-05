@@ -1,0 +1,18 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+@*<h2>上传文件</h2>*@
+
+<br />
+<br />
+
+<div class="form-group">
+    <form action="~/Home/UploadFile" method="post" enctype="multipart/form-data">
+        <label for="exampleFormControlFile1">上传Excle文件</label>
+        <input type="file" name="file" class="form-control" /><br />
+        <input type="submit" value="Upload" class="form-control btn btn-primary" />
+    </form>
+</div>
+

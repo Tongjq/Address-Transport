@@ -1,0 +1,53 @@
+﻿
+@{
+    ViewBag.Title = "Translation";
+}
+
+<h2>上传成功</h2>
+@{
+
+    var path = Server.MapPath("~/UploadExcelFile");
+    DirectoryInfo folder = new DirectoryInfo(path);
+
+}
+
+
+<div class="form-group">
+    <label for="exampleFormControlInput1">文件：</label>
+    <p class="form-control">@folder.GetFiles("*.xlsx")[0].Name</p>
+    <a id="zhuanhuan" class="btn btn-primary form-control stretched-link">点击转换</a>
+    @*<a href="~/Home/ReadExcelToTable" class="btn btn-primary form-control stretched-link">点击转换</a>*@
+</div>
+
+<div id="result"></div>
+<br />
+<div><a id="download"></a></div>
+
+<div id="wait"></div>
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<script src="~/Scripts/bootstrap.min.js"></script>
+<script>
+    $(function () {
+        $("#zhuanhuan").click(function () {
+            $("#wait").addClass("loader");
+            $(this).attr('disabled', 'false');           
+                $.ajax({
+                    url: "/Home/ReadExcelToTable",
+                    success: function (result) {
+                        if (result) {
+                            $('#result').text("转换成功！点击链接下载。");
+                            $('#download').attr('href', "/UploadExcelFile/AddressPoint.xls");
+                            $('#download').text("AddressPoint.xls");
+                        } else {
+                            $('#result').text("转换失败，请重试！");
+                        }
+                        
+                        $('#zhuanhuan').removeAttr("disabled");
+                        $("#wait").removeClass("loader");
+                    }
+                });
+          
+        });
+    });
+</script>
