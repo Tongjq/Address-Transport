@@ -87,38 +87,36 @@ namespace AT.WebUI.Controllers
                 stream.Close();
                 stream.Dispose();
             }
-            //ArrayList AL = new ArrayList();//创建一个集合，用来存放Excel的标题
-            //int CellsCount = sheet.GetRow(0).Cells.Count;//获得这个表的第一行的列数,也就是标题行的列数
-            //for (int i = 0; i < CellsCount; i++)//将标题行的每一列存储到集合中
-            //{
-            //    AL.Add(sheet.GetRow(0).GetCell(i).StringCellValue);
-            //}
 
             IRow row = null;
-            // ICell cell = null;
-            for (int i = 0; i <=sheet.LastRowNum; i++)//从标题行一下，也就是第二行开始遍历此表
+            List<IRow> rows = new List<IRow>();
+            for (int i = 0; i < sheet.LastRowNum + 1; i++)
             {
                 row = sheet.GetRow(i);
+                rows.Add(row);
                 if (row != null)
                 {
-                    if (!string.IsNullOrEmpty(row.Cells[0].ToString().Trim()))
-                        listCity.Add(row.Cells[0].ToString());
+                    if (!string.IsNullOrEmpty(row.Cells[1].ToString().Trim()))
+                    { listCity.Add(row.Cells[1].ToString()); }
+
+                    else { listCity.Add("空行"); }
+                }
+                else
+                {
+                    listCity.Add("空行");
                 }
             }
             stream.Close();
             stream.Dispose();
-            GetPoint(listCity);
+            return GetPoint(listCity);
 
-            return true;
         }
 
-        private void GetPoint(List<string> listCity)
+        private bool GetPoint(List<string> listCity)
         {
             List<string> listT = new List<string>();
 
-            //创建工作薄
             HSSFWorkbook wk = new HSSFWorkbook();
-            //创建一个名称为mySheet的表
             ISheet tb = wk.CreateSheet("Point");
 
 
@@ -128,88 +126,132 @@ namespace AT.WebUI.Controllers
             cell.SetCellValue("Address");
             tb.SetColumnWidth(1, 40 * 256);
             ICell cell1 = rowhead.CreateCell(1);
-            cell1.SetCellValue("lng");
+            cell1.SetCellValue("Lng");
             tb.SetColumnWidth(2, 40 * 256);
             ICell cell2 = rowhead.CreateCell(2);
-            cell2.SetCellValue("lat");
+            cell2.SetCellValue("Lat");
 
 
             for (int i = 1; i < listCity.Count(); i++)
             {
+                IRow row = tb.CreateRow(i);
+                #region test code
                 if (!string.IsNullOrEmpty(listCity[i].TrimEnd()))
                 {
-                    IRow row1 = tb.CreateRow(i);
-                    ICell cellAddress = row1.CreateCell(0);  //创建地址单元格
+                    if (listCity[i] == "空行")
+                    {
+                        ICell cellAddress1 = row.CreateCell(0);
+                        cellAddress1.SetCellValue(listCity[i]);
+                        ICell lngCell1 = row.CreateCell(1);
+                        lngCell1.SetCellValue("空行");
+                        ICell latCell2 = row.CreateCell(2);
+                        latCell2.SetCellValue("空行");
+                    }
+                    else
+                    {
+
+                        ICell cellAddress = row.CreateCell(0);  //创建地址单元格
+                        cellAddress.SetCellValue(listCity[i]);
+                        ICell lngCell = row.CreateCell(1);  //创建经度单元格
+                        lngCell.SetCellValue("11");
+                        ICell latCell = row.CreateCell(2);  //创建纬度单元格
+                        latCell.SetCellValue("22");
+                    }
+                }
+                #endregion
+
+
+                #region request
+
+                /* if (!string.IsNullOrEmpty(listCity[i].TrimEnd()))
+                  {
+                      if (listCity[i] == "空行")
+                      {
+                          ICell cellAddress1 = row.CreateCell(0);
+                          cellAddress1.SetCellValue(listCity[i]);
+                          ICell lngCell1 = row.CreateCell(1);
+                          lngCell1.SetCellValue("空行");
+                          ICell latCell2 = row.CreateCell(2);
+                          latCell2.SetCellValue("空行");
+                      }
+                      else
+                      {
+                          string ak = "LXaG6FhzIcVFAtcoM0T4MZ0Zg78kIymV";
+                          string Url = @"http://api.map.baidu.com/geocoding/v3/?address=" + listCity[i].Trim() + "&output=json&ak=" + ak;
+                          HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url);
+                          request.KeepAlive = false;
+                          request.Method = "GET";
+                          request.ContentType = "application/json";
+                          //request.Timeout = 50000;
+                          //request.ServicePoint.ConnectionLeaseTimeout = 50000;
+                          //request.ServicePoint.MaxIdleTime = 50000;
+
+                          try
+                          {
+                              HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                              Stream myResponseStream = response.GetResponseStream();
+                              StreamReader myStreamReader = new StreamReader(myResponseStream, Encoding.GetEncoding("utf-8"));
+                              string retString = myStreamReader.ReadToEnd();
+                              myStreamReader.Close();
+                              myResponseStream.Close();
+                              response.Close();
+                              request.Abort();
+                              //var txtLocation = retString;
+                              JObject obj_RawData = (JObject)(JsonConvert.DeserializeObject(retString));
+                              if (obj_RawData["result"] != null)
+                              {
+                                  JObject obj_Result = (JObject)(JsonConvert.DeserializeObject(obj_RawData["result"].ToString()));
+                                  JObject obj_Loaction = (JObject)(JsonConvert.DeserializeObject(obj_Result["location"].ToString()));
+                                  string lng = obj_Loaction["lng"].ToString(); //经度值
+                                  string lat = obj_Loaction["lat"].ToString(); //纬度值
+                                  listT.Add(listCity[i] + "----" + "Lng:" + lng + ",Lat:" + lat);
+
+                                  ICell cellAddress = row.CreateCell(0);  //创建地址单元格
+                                  cellAddress.SetCellValue(listCity[i]);
+                                  ICell lngCell = row.CreateCell(1);  //创建经度单元格
+                                  lngCell.SetCellValue(lng);
+                                  ICell latCell = row.CreateCell(2);  //创建纬度单元格
+                                  latCell.SetCellValue(lat);
+                              }
+                              else
+                              {
+                                  listT.Add(listCity[i] + "----" + "N/A");
+                                  ICell cellAddress = row.CreateCell(0);
+                                  cellAddress.SetCellValue(listCity[i]);
+                                  ICell lngCell = row.CreateCell(1);
+                                  lngCell.SetCellValue("没有获取到");
+                                  ICell latCell = row.CreateCell(2);
+                                  latCell.SetCellValue("没有获取到");
+                              }
+                          }
+                          catch
+                          {
+                              return false;
+                          }
+                      }
+
+                  } */
+                #endregion
+
+                else
+                {
+                    ICell cellAddress = row.CreateCell(0);
                     cellAddress.SetCellValue(listCity[i]);
-                    ICell lngCell = row1.CreateCell(1);  //创建经度单元格
-                    lngCell.SetCellValue("11");
-                    ICell latCell = row1.CreateCell(2);  //创建纬度单元格
-                    latCell.SetCellValue("22");
+                    ICell lngCell = row.CreateCell(1);
+                    lngCell.SetCellValue("空行");
+                    ICell latCell = row.CreateCell(2);
+                    latCell.SetCellValue("空行");
                 }
 
 
-                //IRow row = tb.CreateRow(i);
-                //if (!string.IsNullOrEmpty(listCity[i].TrimEnd()))
-                //{
-                //    string ak = "akString";
-                //    string Url = @"http://api.map.baidu.com/geocoding/v3/?address=" + listCity[i].Trim() + "&output=json&ak=" + ak;
-                //    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url);
-                //    request.KeepAlive = false;
-                //    request.Method = "GET";
-                //    request.ContentType = "application/json";
-                //    //request.Timeout = 50000;
-                //    //request.ServicePoint.ConnectionLeaseTimeout = 50000;
-                //    //request.ServicePoint.MaxIdleTime = 50000;
-
-                //    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-                //    Stream myResponseStream = response.GetResponseStream();
-                //    StreamReader myStreamReader = new StreamReader(myResponseStream, Encoding.GetEncoding("utf-8"));
-                //    string retString = myStreamReader.ReadToEnd();
-                //    myStreamReader.Close();
-                //    myResponseStream.Close();
-                //    response.Close();
-                //    request.Abort();
-
-                //    var txtLocation = retString;
-
-
-                //    JObject obj_RawData = (JObject)(JsonConvert.DeserializeObject(retString));
-                //    if (obj_RawData["result"] != null)
-                //    {
-                //        JObject obj_Result = (JObject)(JsonConvert.DeserializeObject(obj_RawData["result"].ToString()));
-                //        JObject obj_Loaction = (JObject)(JsonConvert.DeserializeObject(obj_Result["location"].ToString()));
-                //        string lng = obj_Loaction["lng"].ToString(); //经度值
-                //        string lat = obj_Loaction["lat"].ToString(); //纬度值
-                //        listT.Add(listCity[i] + "----" + "Lng:" + lng + ",Lat:" + lat);
-
-                //        ICell cellAddress = row.CreateCell(0);  //创建地址单元格
-                //        cellAddress.SetCellValue(listCity[i]);
-                //        ICell lngCell = row.CreateCell(1);  //创建经度单元格
-                //        lngCell.SetCellValue(lng);
-                //        ICell latCell = row.CreateCell(2);  //创建纬度单元格
-                //        latCell.SetCellValue(lng);
-                //    }
-                //    else
-                //    {
-                //        listT.Add(listCity[i] + "----" + "N/A");
-                //        ICell cellAddress = row.CreateCell(0);  
-                //        cellAddress.SetCellValue(listCity[i]);
-                //        ICell lngCell = row.CreateCell(1);  
-                //        lngCell.SetCellValue("没有获取到");
-                //        ICell latCell = row.CreateCell(2);  
-                //        latCell.SetCellValue("没有获取到");
-                //    }
-
-                //}
             }
 
-            var path = Server.MapPath("/UploadExcelFile")+ "/AddressPoint.xls";
+            var path = Server.MapPath("/UploadExcelFile") + "/AddressPoint.xls";
 
             using (FileStream stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write))
             {
-               
-                   wk.Write(stream);
-               
+                wk.Write(stream);
+                return true;
             }
 
         }
